@@ -5,9 +5,15 @@ namespace bucketlist.Services;
 
 public interface IRedisClient
 {
-    Task<bool> DeleteEntry(string key);
+    Task<bool> DeletePickedEntryAsync();
 
-    Task<bool> AddEntry(string key, Item[] items);
+    Task<bool> UpdatePickedEntryAsync(Item item);
 
-    Task<Item[]> GetEntry(string key);
+    Task<Item> GetPickedEntryAsync();
+
+    Task<bool> DeleteEntryAsync(string key);
+
+    Task<bool> AddEntryAsync(string key, Item[] items);
+
+    Task<Item[]> GetEntryAsync(string key);
 }

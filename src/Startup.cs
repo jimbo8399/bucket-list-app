@@ -25,7 +25,7 @@ public class Startup
     {
         services.AddControllersWithViews();
         services.AddSingleton<ICosmosDbService>(InitializeCosmosClientInstanceAsync(Configuration.GetSection("CosmosDb")).GetAwaiter().GetResult());
-        services.AddSingleton<IRedisClient>(InitializeRedisDatabaseClientInstanceAsync(Configuration.GetSection("CacheConnectionString")));
+        services.AddSingleton<IRedisClient>(InitializeRedisDatabaseClientInstanceAsync(Configuration.GetSection("RedisCache")));
     }
     // </ConfigureServices> 
 
@@ -84,7 +84,7 @@ public class Startup
         
         CosmosDbService cosmosDbService = new CosmosDbService(client, databaseName, containerName);
         Microsoft.Azure.Cosmos.DatabaseResponse database = await client.CreateDatabaseIfNotExistsAsync(databaseName);
-        await database.Database.CreateContainerIfNotExistsAsync(containerName, "/userId");
+        await database.Database.CreateContainerIfNotExistsAsync(containerName, "/id", throughput: 400);
 
         return cosmosDbService;
     }
@@ -92,7 +92,7 @@ public class Startup
 
     private static RedisClient InitializeRedisDatabaseClientInstanceAsync(IConfigurationSection configurationSection)
     {
-        ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(configurationSection.Value);
+        ConnectionMultiplexer redis = ConnectionMultiplexer.Connect(configurationSection.GetSection("ConnectionString").Value);
         var redisDb = redis.GetDatabase();
 
         return new RedisClient(redisDb);

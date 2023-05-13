@@ -48,7 +48,7 @@
         @Html.AntiForgeryToken()
 
         <div class="form-actions no-color">
-            <input type="submit" value="Complete" class="btn btn-default" /> |
+            <input type="submit" formmethod="post" value="Complete" class="btn btn-default" /> |
             @Html.ActionLink("Back to List", "Index")
         </div>
     }

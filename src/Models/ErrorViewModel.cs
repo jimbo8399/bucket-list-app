@@ -1,5 +1,3 @@
-using System;
-
 namespace bucketlist.Models;
 
 public class ErrorViewModel

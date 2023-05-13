@@ -1,59 +1,124 @@
-﻿@model IEnumerable<bucketlist.Models.Item>
+﻿@model BucketListModel
 
 @{
     ViewBag.Title = "List of Bucketlist Items";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>List of Bucketlist Items</h2>
+<h1>List of Bucketlist Items</h1>
 
+<h2>Top 5 Closest</h2>
 <table class="table">
     <tr>
         <th>
-            @Html.DisplayNameFor(model => model.Name)
+            @Html.DisplayNameFor(model => model.TopFiveClosestItems.FirstOrDefault().Name)
         </th>
         <th>
-            @Html.DisplayNameFor(model => model.Price)
+            @Html.Raw("Cost - €")
         </th>
         <th>
-            @Html.DisplayNameFor(model => model.Distance)
+            @Html.Raw("Distance - km")
         </th>
         <th>
-            @Html.DisplayNameFor(model => model.IsPicked)
+            @Html.Raw("Current choice")
         </th>
         <th></th>
     </tr>
 
-@foreach (var item in Model) {
-    <tr>
-        <td>
-            @Html.DisplayFor(modelItem => item.Name)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.Price)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.Distance)
-        </td>
-        <td>
-            <form asp-controller="Item" asp-action="Pick" method="post">
-                <input type="checkbox" asp-for="@item.IsPicked" />
-                <input type="hidden" asp-for="@item.Id" />
-                <input type="hidden" asp-for="@item.Name" />
-                <input type="hidden" asp-for="@item.Description" />
-                <input type="hidden" asp-for="@item.Price" />
-                <input type="hidden" asp-for="@item.Distance" />
-                <button type="submit">Pick</button>
-            </form>
-        </td>
-        <td>
-            @Html.ActionLink("Edit", "Edit", new { id=item.Id }) |
-            @Html.ActionLink("Details", "Details", new { id=item.Id }) |
-            @Html.ActionLink("Complete", "Complete", new { id=item.Id, isPicked=item.IsPicked })
-        </td>
-    </tr>
-}
+    @foreach (var item in Model.TopFiveClosestItems)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Price)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Distance)
+            </td>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new { id=item.Id }) |
+                @Html.ActionLink("Details", "Details", new { id=item.Id }) |
+                @Html.ActionLink("Complete", "Complete", new { id=item.Id, isCompleted=item.IsCompleted, name=item.Name, price=item.Price, distance=item.Distance, description=item.Description })
+            </td>
+        </tr>
+    }
+</table>
 
+<h2>Top 5 Cheapest</h2>
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.TopFiveCheapestItems.FirstOrDefault().Name)
+        </th>
+        <th>
+            @Html.Raw("Cost - €")
+        </th>
+        <th>
+            @Html.Raw("Distance - km")
+        </th>
+        <th>
+            @Html.Raw("Current choice")
+        </th>
+        <th></th>
+    </tr>
+
+    @foreach (var item in Model.TopFiveCheapestItems)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Price)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Distance)
+            </td>
+            <td>
+                @Html.ActionLink("Edit", "Edit", new { id=item.Id }) |
+                @Html.ActionLink("Details", "Details", new { id=item.Id }) |
+                @Html.ActionLink("Complete", "Complete", new { id=item.Id, isCompleted=item.IsCompleted, name=item.Name, price=item.Price, distance=item.Distance, description=item.Description })
+            </td>
+        </tr>
+    }
+</table>
+
+<h2>List of Completed Items</h2>
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.AllCompletedItems.FirstOrDefault().Name)
+        </th>
+        <th>
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.AllCompletedItems.FirstOrDefault().Description)
+        </th>
+        <th>
+        </th>
+        <th></th>
+    </tr>
+
+    @foreach (var item in Model.AllCompletedItems)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Name)
+            </td>
+            <td>
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Description)
+            </td>
+            <td>
+            </td>
+            <td>
+                @Html.ActionLink("Details", "Details", new { id=item.Id })
+            </td>
+        </tr>
+    }
 </table>
 
 <p>

@@ -9,18 +9,27 @@ namespace bucketlist.Controllers;
 public class ItemController : Controller
 {
     private readonly ICosmosDbService _cosmosDbService;
-    private readonly IRedisClient _redisClient;
+    private readonly ITopFiveCalculator _calculator;
+    private readonly IItemsHandler _itemHandler;
 
-    public ItemController(ICosmosDbService cosmosDbService, IRedisClient redisClient)
+    public ItemController(ICosmosDbService cosmosDbService, ITopFiveCalculator calculator, IItemsHandler itemHandler)
     {
         _cosmosDbService = cosmosDbService;
-        _redisClient = redisClient;
+        _calculator = calculator;
+        _itemHandler = itemHandler;
     }
 
     [ActionName("Index")]
     public async Task<IActionResult> Index()
     {
-        return View(await _cosmosDbService.GetItemsAsync("SELECT * FROM c"));
+
+        var model = new BucketListModel()
+        {
+            TopFiveCheapestItems = await _calculator.GetTopFiveCheapest(),
+            TopFiveClosestItems = await _calculator.GetTopFiveClosest(),
+            AllCompletedItems = await _itemHandler.GetAllCompletedItemsAsync()
+        };
+        return View(model);
     }
 
     [ActionName("Create")]
@@ -32,71 +41,17 @@ public class ItemController : Controller
     [HttpPost]
     [ActionName("Create")]
     [ValidateAntiForgeryToken]
-    public async Task<ActionResult> CreateAsync([Bind("Id,Name,Description,Distance,Price,IsPicked")] Item item)
+    public async Task<ActionResult> CreateAsync([Bind("Id,Name,Description,Distance,Price")] Item item)
     {
         if (ModelState.IsValid)
         {
-            item.Id = Guid.NewGuid().ToString();
-            await _cosmosDbService.AddItemAsync(item);
+            await _itemHandler.CreateNewItem(item);
 
-            if (item.IsPicked)
-            {
-                return await PickItemAsync(item);
-            }
+            await _calculator.CalculateAndStoreTopFives();
 
             return RedirectToAction("Index");
         }
         return View(item);
-    }
-
-    [HttpPost]
-    [ActionName("Pick")]
-    [ValidateAntiForgeryToken]
-    public async Task<ActionResult> PickAsync([Bind("Id,Name,Description,Distance,Price,IsPicked")] Item item)
-    {
-        if (ModelState.IsValid)
-        {
-            return await PickItemAsync(item);
-        }
-        return View(item);
-    }
-
-    private async Task<ActionResult> PickItemAsync(Item item)
-    {
-        var current = await _redisClient.GetPickedEntryAsync();
-        if (current != null)
-        {
-            current.IsPicked = false;
-            await _cosmosDbService.UpdateItemAsync(current.Id, current);
-
-            item.IsPicked = true;
-            await UpdateItem(item);
-
-            return RedirectToAction("Index");
-        }
-
-        var pickedItem = await _cosmosDbService.FindPickedItemAsync();
-        if (pickedItem == null)
-        {
-            item.IsPicked = true;
-            await UpdateItem(item);
-
-            return RedirectToAction("Index");
-        }
-
-        pickedItem.IsPicked = false;
-        await UpdateItem(pickedItem);
-
-        return RedirectToAction("Index");
-    }
-
-    private async Task UpdateItem(Item item)
-    {
-        await _cosmosDbService.UpdateItemAsync(item.Id, item);
-        if (item.IsPicked)
-        {
-            await _redisClient.UpdatePickedEntryAsync(item);
-        }
     }
 
     [ActionName("Edit")]
@@ -107,7 +62,7 @@ public class ItemController : Controller
             return BadRequest();
         }
 
-        Item item = await _cosmosDbService.GetItemAsync(id);
+        Item item = await _itemHandler.GetItem(id);
         if (item == null)
         {
             return NotFound();
@@ -119,11 +74,13 @@ public class ItemController : Controller
     [HttpPost]
     [ActionName("Edit")]
     [ValidateAntiForgeryToken]
-    public async Task<ActionResult> EditAsync([Bind("Id,Name,Description,Distance,Price")] Item item)
+    public async Task<ActionResult> EditAsync([Bind("Id,Name,Description,Distance,Price,IsCompleted")] Item item)
     {
         if (ModelState.IsValid)
         {
-            await UpdateItem(item);
+            await _itemHandler.UpdateItem(item);
+
+            await _calculator.CalculateAndStoreTopFives();
 
             return RedirectToAction("Index");
         }
@@ -132,14 +89,14 @@ public class ItemController : Controller
     }
 
     [ActionName("Complete")]
-    public async Task<ActionResult> CompleteAsync(string id)
+    public async Task<ActionResult> CompleteAsync([Bind("Id")] string id)
     {
         if (id == null)
         {
             return BadRequest();
         }
 
-        Item item = await _cosmosDbService.GetItemAsync(id);
+        Item item = await _itemHandler.GetItem(id);
         if (item == null)
         {
             return NotFound();
@@ -151,22 +108,23 @@ public class ItemController : Controller
     [HttpPost]
     [ActionName("Complete")]
     [ValidateAntiForgeryToken]
-    public async Task<ActionResult> CompleteConfirmedAsync([Bind("Id,IsPicked")] string id, bool isPicked)
+    public async Task<ActionResult> CompleteConfirmedAsync([Bind("Id,Name,Description,Distance,Price,IsCompleted")] Item item)
     {
-        if (isPicked)
+        if (ModelState.IsValid)
         {
-            await _redisClient.DeletePickedEntryAsync();
+            await _itemHandler.MarkAsCompletedItem(item);
+
+            await _calculator.CalculateAndStoreTopFives();
+
+            return RedirectToAction("Index");
         }
-        await _cosmosDbService.DeleteItemAsync(id);
 
-        // Recalculate items
-
-        return RedirectToAction("Index");
+        return View(item);
     }
 
     [ActionName("Details")]
     public async Task<ActionResult> DetailsAsync(string id)
     {
-        return View(await _cosmosDbService.GetItemAsync(id));
+        return View(await _itemHandler.GetItem(id));
     }
 }

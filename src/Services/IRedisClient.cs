@@ -1,19 +1,15 @@
 ﻿using bucketlist.Models;
+using StackExchange.Redis;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace bucketlist.Services;
 
 public interface IRedisClient
 {
-    Task<bool> DeletePickedEntryAsync();
-
-    Task<bool> UpdatePickedEntryAsync(Item item);
-
-    Task<Item> GetPickedEntryAsync();
-
     Task<bool> DeleteEntryAsync(string key);
 
-    Task<bool> AddEntryAsync(string key, Item[] items);
+    Task<bool> AddEntryAsync(string key, IEnumerable<Item> items);
 
-    Task<Item[]> GetEntryAsync(string key);
+    Task<IEnumerable<Item>> GetEntryAsync(RedisKey redisKey);
 }

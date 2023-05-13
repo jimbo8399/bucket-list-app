@@ -1,23 +1,87 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using bucketlist.Models;
+using StackExchange.Redis;
 
 namespace bucketlist.Services;
 
 public class TopFiveCalculator : ITopFiveCalculator
 {
-    public Task<IEnumerable<Item>> GetTopFiveCheapest()
+    private readonly ICosmosDbService _cosmosDbService;
+    private readonly IRedisClient _redisClient;
+    private static RedisKey _topFiveCheapestKey = new RedisKey("topfivecheapest");
+    private static RedisKey _topFiveClosestKey = new RedisKey("topfiveclosest");
+
+    public TopFiveCalculator(ICosmosDbService cosmosDbService, IRedisClient redisClient)
     {
-        throw new System.NotImplementedException();
+        _cosmosDbService = cosmosDbService ?? throw new ArgumentNullException(nameof(cosmosDbService));
+        _redisClient = redisClient ?? throw new ArgumentNullException(nameof(redisClient));
     }
 
-    public Task<IEnumerable<Item>> GetTopFiveClosest()
+    public async Task<IEnumerable<Item>> GetTopFiveCheapest()
     {
-        throw new System.NotImplementedException();
+        var cheapest = await _redisClient.GetEntryAsync(_topFiveCheapestKey);
+
+        if (cheapest == null)
+        {
+            return await calculateAndStoreTopFiveCheapest();
+        }
+
+        return cheapest;
     }
 
-    public Task<IEnumerable<Item>> GetTopFiveOldest()
+
+    public async Task<IEnumerable<Item>> GetTopFiveClosest()
     {
-        throw new System.NotImplementedException();
+        var closest = await _redisClient.GetEntryAsync(_topFiveClosestKey);
+
+        if (closest == null)
+        {
+            return await calculateAndStoreTopFiveClosest();
+        }
+
+        return closest;
+    }
+
+    public async Task CalculateAndStoreTopFives()
+    {
+        var items = await _cosmosDbService.FindAllNonCompletedItems();
+
+        await Task.WhenAll(new[] {
+                calculateAndStoreTopFiveCheapest(items),
+                calculateAndStoreTopFiveClosest(items)
+            });
+    }
+
+    private async Task<IEnumerable<Item>> calculateAndStoreTopFiveCheapest(IEnumerable<Item> items = null)
+    {
+        if (items == null)
+        {
+            items = await _cosmosDbService.FindAllNonCompletedItems();
+        }
+
+        var orderedItems = items.OrderBy(item => item.Price);
+        var topFive = orderedItems.Take(5);
+
+        await _redisClient.AddEntryAsync(_topFiveCheapestKey, topFive);
+
+        return topFive;
+    }
+
+    private async Task<IEnumerable<Item>> calculateAndStoreTopFiveClosest(IEnumerable<Item> items = null)
+    {
+        if (items == null)
+        {
+            items = await _cosmosDbService.FindAllNonCompletedItems();
+        }
+        
+        var orderedItems = items.OrderBy(item => item.Distance);
+        var topFive = orderedItems.Take(5);
+
+        await _redisClient.AddEntryAsync(_topFiveClosestKey, topFive);
+
+        return topFive;
     }
 }

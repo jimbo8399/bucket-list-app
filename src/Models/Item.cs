@@ -19,6 +19,6 @@ public class Item
     [JsonProperty(PropertyName = "distance")]
     public int Distance { get; set; }
 
-    [JsonProperty(PropertyName = "isPicked")]
-    public bool IsPicked { get; set; }
+    [JsonProperty(PropertyName = "isCompleted")]
+    public bool IsCompleted { get; set; } = false;
 }

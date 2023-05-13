@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using bucketlist.Models;
+using bucketlist.Services;
 using Microsoft.Azure.Cosmos;
 
-namespace bucketlist;
+namespace bucketlist.Services;
 
 public class CosmosDbService : ICosmosDbService
 {
@@ -36,24 +38,31 @@ public class CosmosDbService : ICosmosDbService
             ItemResponse<Item> response = await _container.ReadItemAsync<Item>(id, new PartitionKey(id));
             return response.Resource;
         }
-        catch(CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch(CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         { 
             return null;
         }
     }
 
-    public async Task<Item> FindPickedItemAsync()
+    public async Task<IEnumerable<Item>> FindAllNonCompletedItems()
     {
         try
         {
-            var response = await GetItemsAsync("SELECT * FROM c WHERE c.IsPicked = 'true'");
-            if (response.Count() > 1)
-            {
-                throw new Exception("More than one item is marked as picked.");
-            }
-            return response.FirstOrDefault();
+            return await GetItemsAsync("SELECT * FROM c WHERE c.isCompleted = false");
         }
-        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+    }
+
+    public async Task<IEnumerable<Item>> FindAllCompletedItems()
+    {
+        try
+        {
+            return await GetItemsAsync("SELECT * FROM c WHERE c.isCompleted = true");
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
         {
             return null;
         }

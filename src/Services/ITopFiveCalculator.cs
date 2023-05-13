@@ -8,5 +8,5 @@ public interface ITopFiveCalculator
 {
     Task<IEnumerable<Item>> GetTopFiveCheapest();
     Task<IEnumerable<Item>> GetTopFiveClosest();
-    Task<IEnumerable<Item>> GetTopFiveOldest();
+    Task CalculateAndStoreTopFives();
 }

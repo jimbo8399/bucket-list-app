@@ -26,6 +26,8 @@ public class Startup
         services.AddControllersWithViews();
         services.AddSingleton<ICosmosDbService>(InitializeCosmosClientInstanceAsync(Configuration.GetSection("CosmosDb")).GetAwaiter().GetResult());
         services.AddSingleton<IRedisClient>(InitializeRedisDatabaseClientInstanceAsync(Configuration.GetSection("RedisCache")));
+        services.AddSingleton<ITopFiveCalculator, TopFiveCalculator>();
+        services.AddSingleton<IItemsHandler, ItemsHandler>();
     }
     // </ConfigureServices> 
 

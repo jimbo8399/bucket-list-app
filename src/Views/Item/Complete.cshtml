@@ -1,13 +1,13 @@
 ﻿@model bucketlist.Models.Item
 
 @{
-    ViewBag.Title = "Check";
+    ViewBag.Title = "Complete";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<h2>Delete a To-Do Item</h2>
+<h2>Mark a Bucketlist Item as Completed</h2>
 
-<h3>Are you sure you want to mark this item as checked?</h3>
+<h3>Are you sure you want to mark this item as completed?</h3>
 <div>
     <hr />
     <dl class="dl-horizontal">
@@ -48,7 +48,7 @@
         @Html.AntiForgeryToken()
 
         <div class="form-actions no-color">
-            <input type="submit" value="Check" class="btn btn-default" /> |
+            <input type="submit" value="Complete" class="btn btn-default" /> |
             @Html.ActionLink("Back to List", "Index")
         </div>
     }

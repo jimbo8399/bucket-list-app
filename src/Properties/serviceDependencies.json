@@ -3,6 +3,10 @@
     "redis1": {
       "type": "redis",
       "connectionId": "CacheConnection"
+    },
+    "cosmosdb1": {
+      "type": "cosmosdb",
+      "connectionId": "Key"
     }
   }
 }
